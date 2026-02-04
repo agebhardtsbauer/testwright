@@ -19,6 +19,8 @@ export default defineConfig([
     minify: false,
     target: "node18",
     outDir: "dist",
+    // Never bundle @playwright/test - always use consumer's version
+    external: ["@playwright/test"],
   },
   // CLI build
   {
