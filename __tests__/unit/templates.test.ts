@@ -261,11 +261,11 @@ describe("generateExampleSpec", () => {
       expect(result).toContain('from "../testUsers.js"');
     });
 
-    it("should use testCaseId fixture", () => {
+    it("should use testCase wrapper", () => {
       const result = generateExampleSpec(options);
-      expect(result).toContain("testCaseId");
+      expect(result).toContain("testCase");
       expect(result).toContain("TC-0001");
-      expect(result).toContain('from "testwright/fixtures"');
+      expect(result).toContain('from "testwright"');
     });
   });
 

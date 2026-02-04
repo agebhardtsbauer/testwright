@@ -1,5 +1,4 @@
-import { test as base, type TestInfo } from "@playwright/test";
-import type { PlaywrightTestArgs, PlaywrightTestOptions, PlaywrightWorkerArgs, PlaywrightWorkerOptions } from "@playwright/test";
+import { test as base, type TestInfo, type Page, type BrowserContext, type Browser, type APIRequestContext } from "@playwright/test";
 
 /**
  * Annotation type for test case IDs
@@ -9,10 +8,21 @@ import type { PlaywrightTestArgs, PlaywrightTestOptions, PlaywrightWorkerArgs, P
 export const TEST_CASE_ANNOTATION_TYPE = "testCaseId";
 
 /**
+ * Common fixtures passed to test functions
+ */
+interface CommonFixtures {
+  page: Page;
+  context: BrowserContext;
+  browser: Browser;
+  request: APIRequestContext;
+  browserName: string;
+}
+
+/**
  * Type for test function with fixtures
  */
 type TestFunction = (
-  args: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions,
+  args: CommonFixtures,
   testInfo: TestInfo
 ) => Promise<void> | void;
 
@@ -51,7 +61,8 @@ export function testCase(
   const ids = Array.isArray(testCaseId) ? testCaseId : [testCaseId];
 
   // Create test with annotations
-  base(title, async (fixtures, testInfo) => {
+  // Note: Playwright requires explicit fixture listing - we include common ones
+  base(title, async ({ page, context, browser, request, browserName }, testInfo) => {
     // Add annotations to test info
     for (const id of ids) {
       testInfo.annotations.push({
@@ -61,7 +72,7 @@ export function testCase(
     }
 
     // Run the actual test
-    await testFn(fixtures, testInfo);
+    await testFn({ page, context, browser, request, browserName }, testInfo);
   });
 }
 
@@ -79,7 +90,7 @@ testCase.only = function (
 ): void {
   const ids = Array.isArray(testCaseId) ? testCaseId : [testCaseId];
 
-  base.only(title, async (fixtures, testInfo) => {
+  base.only(title, async ({ page, context, browser, request, browserName }, testInfo) => {
     for (const id of ids) {
       testInfo.annotations.push({
         type: TEST_CASE_ANNOTATION_TYPE,
@@ -87,7 +98,7 @@ testCase.only = function (
       });
     }
 
-    await testFn(fixtures, testInfo);
+    await testFn({ page, context, browser, request, browserName }, testInfo);
   });
 };
 
@@ -105,7 +116,7 @@ testCase.skip = function (
 ): void {
   const ids = Array.isArray(testCaseId) ? testCaseId : [testCaseId];
 
-  base(title, async (fixtures, testInfo) => {
+  base(title, async ({ page, context, browser, request, browserName }, testInfo) => {
     testInfo.skip(true, "Skipped via testCase.skip");
 
     for (const id of ids) {
@@ -115,7 +126,7 @@ testCase.skip = function (
       });
     }
 
-    await testFn(fixtures, testInfo);
+    await testFn({ page, context, browser, request, browserName }, testInfo);
   });
 };
 
@@ -133,7 +144,7 @@ testCase.fixme = function (
 ): void {
   const ids = Array.isArray(testCaseId) ? testCaseId : [testCaseId];
 
-  base(title, async (fixtures, testInfo) => {
+  base(title, async ({ page, context, browser, request, browserName }, testInfo) => {
     testInfo.fixme(true, "Marked fixme via testCase.fixme");
 
     for (const id of ids) {
@@ -143,7 +154,7 @@ testCase.fixme = function (
       });
     }
 
-    await testFn(fixtures, testInfo);
+    await testFn({ page, context, browser, request, browserName }, testInfo);
   });
 };
 

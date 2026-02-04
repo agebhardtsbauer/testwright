@@ -226,8 +226,8 @@ export function generateExampleSpec(options: ScaffoldOptions): string {
   const firstDomain = options.domains[0]?.name || "default";
 
   if (options.requiresAuth) {
-    return `import { test, expect } from "testwright/fixtures";
-import { loginToApp } from "testwright";
+    return `import { expect } from "@playwright/test";
+import { testCase, loginToApp } from "testwright";
 import { appConfig } from "../app.config.js";
 import { testUsers } from "../testUsers.js";
 
@@ -239,9 +239,7 @@ const user = testUsers.find(
   (u) => u.domain === targetDomain && u.environment === targetEnv
 );
 
-test("${options.appSlug} loads successfully", async ({ page, testCaseId }) => {
-  testCaseId("TC-0001");
-
+testCase("TC-0001", "${options.appSlug} loads successfully", async ({ page }) => {
   if (!user) {
     throw new Error(\`No test user found for \${targetDomain}/\${targetEnv}\`);
   }
@@ -255,9 +253,7 @@ test("${options.appSlug} loads successfully", async ({ page, testCaseId }) => {
   await expect(page).toHaveURL(new RegExp("${options.appSlug}"));
 });
 
-test("page has expected title", async ({ page, testCaseId }) => {
-  testCaseId("TC-0002");
-
+testCase("TC-0002", "page has expected title", async ({ page }) => {
   if (!user) {
     throw new Error(\`No test user found for \${targetDomain}/\${targetEnv}\`);
   }
@@ -273,16 +269,14 @@ test("page has expected title", async ({ page, testCaseId }) => {
 `;
   }
 
-  return `import { test, expect } from "testwright/fixtures";
-import { navigateToApp } from "testwright";
+  return `import { expect } from "@playwright/test";
+import { testCase, navigateToApp } from "testwright";
 import { appConfig } from "../app.config.js";
 
 const targetDomain = process.env.TEST_DOMAIN || "${firstDomain}";
 const targetEnv = (process.env.TEST_ENV as "dev" | "staging" | "prod") || "dev";
 
-test("${options.appSlug} loads successfully", async ({ page, testCaseId }) => {
-  testCaseId("TC-0001");
-
+testCase("TC-0001", "${options.appSlug} loads successfully", async ({ page }) => {
   await navigateToApp(page, appConfig, {
     domain: targetDomain,
     environment: targetEnv,
@@ -292,9 +286,7 @@ test("${options.appSlug} loads successfully", async ({ page, testCaseId }) => {
   await expect(page).toHaveURL(new RegExp("${options.appSlug}"));
 });
 
-test("page has expected title", async ({ page, testCaseId }) => {
-  testCaseId("TC-0002");
-
+testCase("TC-0002", "page has expected title", async ({ page }) => {
   await navigateToApp(page, appConfig, {
     domain: targetDomain,
     environment: targetEnv,
