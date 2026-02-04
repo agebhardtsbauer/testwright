@@ -163,11 +163,11 @@ export function generateTsConfig(): string {
     "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "outDir": "./dist",
-    "rootDir": "."
+    "noEmit": true,
+    "types": ["node"]
   },
   "include": ["**/*.ts"],
-  "exclude": ["node_modules", "dist"]
+  "exclude": ["node_modules"]
 }
 `;
 }
@@ -186,7 +186,7 @@ export function getPackageJsonInstructions(): PackageJsonInstructions {
       "test:e2e:ui": "playwright test -c playwright/playwright.config.ts --ui",
       "test:e2e:report": "playwright show-report playwright/playwright-report",
     },
-    devDependencies: ["@playwright/test", "testwright", "typescript"],
+    devDependencies: ["@playwright/test", "testwright", "typescript", "@types/node"],
   };
 }
 
