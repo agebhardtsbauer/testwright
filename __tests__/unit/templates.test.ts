@@ -5,9 +5,10 @@ import {
   generateTestUsers,
   generatePlaywrightConfig,
   generateTsConfig,
-  generatePackageJson,
   generateGitignore,
   generateExampleSpec,
+  getPackageJsonInstructions,
+  formatPackageJsonInstructions,
   type ScaffoldOptions,
 } from "../../src/cli/templates.js";
 
@@ -162,6 +163,12 @@ describe("generatePlaywrightConfig", () => {
     expect(result).toContain('"testwright/reporter"');
     expect(result).toContain("test-case-results.json");
   });
+
+  it("should configure output directories", () => {
+    const result = generatePlaywrightConfig(options);
+    expect(result).toContain('outputDir: "./test-results"');
+    expect(result).toContain('outputFolder: "./playwright-report"');
+  });
 });
 
 describe("generateTsConfig", () => {
@@ -178,45 +185,52 @@ describe("generateTsConfig", () => {
   });
 });
 
-describe("generatePackageJson", () => {
-  const options: ScaffoldOptions = {
-    appSlug: "member-portal",
-    appType: "spa",
-    requiresAuth: true,
-    domains: [],
-  };
-
-  it("should generate valid JSON", () => {
-    const result = generatePackageJson(options);
-    expect(() => JSON.parse(result)).not.toThrow();
+describe("getPackageJsonInstructions", () => {
+  it("should return scripts with playwright config path", () => {
+    const result = getPackageJsonInstructions();
+    expect(result.scripts["test:e2e"]).toContain("playwright/playwright.config.ts");
   });
 
-  it("should name package based on app slug", () => {
-    const result = generatePackageJson(options);
-    const pkg = JSON.parse(result);
-    expect(pkg.name).toBe("member-portal-tests");
+  it("should include all test script variants", () => {
+    const result = getPackageJsonInstructions();
+    expect(result.scripts["test:e2e"]).toBeDefined();
+    expect(result.scripts["test:e2e:headed"]).toBeDefined();
+    expect(result.scripts["test:e2e:debug"]).toBeDefined();
+    expect(result.scripts["test:e2e:ui"]).toBeDefined();
+    expect(result.scripts["test:e2e:report"]).toBeDefined();
   });
 
-  it("should include testwright as devDependency", () => {
-    const result = generatePackageJson(options);
-    const pkg = JSON.parse(result);
-    expect(pkg.devDependencies.testwright).toBeDefined();
+  it("should include required devDependencies", () => {
+    const result = getPackageJsonInstructions();
+    expect(result.devDependencies).toContain("@playwright/test");
+    expect(result.devDependencies).toContain("testwright");
+    expect(result.devDependencies).toContain("typescript");
+  });
+});
+
+describe("formatPackageJsonInstructions", () => {
+  it("should format instructions with scripts JSON", () => {
+    const instructions = getPackageJsonInstructions();
+    const result = formatPackageJsonInstructions(instructions);
+    expect(result).toContain('"test:e2e"');
+    expect(result).toContain("scripts");
   });
 
-  it("should include test scripts", () => {
-    const result = generatePackageJson(options);
-    const pkg = JSON.parse(result);
-    expect(pkg.scripts.test).toBe("playwright test");
-    expect(pkg.scripts["test:headed"]).toBeDefined();
+  it("should include npm install command", () => {
+    const instructions = getPackageJsonInstructions();
+    const result = formatPackageJsonInstructions(instructions);
+    expect(result).toContain("npm install --save-dev");
+    expect(result).toContain("@playwright/test");
+    expect(result).toContain("testwright");
   });
 });
 
 describe("generateGitignore", () => {
-  it("should include common entries", () => {
+  it("should include playwright-specific entries", () => {
     const result = generateGitignore();
-    expect(result).toContain("node_modules/");
     expect(result).toContain(".auth/");
     expect(result).toContain("test-results/");
+    expect(result).toContain("playwright-report/");
     expect(result).toContain(".env");
   });
 });

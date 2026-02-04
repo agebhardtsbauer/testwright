@@ -8,9 +8,10 @@ import {
   generateTestUsers,
   generatePlaywrightConfig,
   generateTsConfig,
-  generatePackageJson,
   generateGitignore,
   generateExampleSpec,
+  getPackageJsonInstructions,
+  formatPackageJsonInstructions,
   type ScaffoldOptions,
   type DomainConfig,
 } from "./templates.js";
@@ -124,48 +125,44 @@ export async function scaffold(): Promise<void> {
   console.log("");
 
   const cwd = process.cwd();
-  const testsDir = join(cwd, "tests");
+  const playwrightDir = join(cwd, "playwright");
+  const testsDir = join(playwrightDir, "tests");
 
-  // Create tests directory if it doesn't exist
+  // Create directories if they don't exist
   if (!existsSync(testsDir)) {
     mkdirSync(testsDir, { recursive: true });
   }
 
   const files: Array<{ path: string; content: string; name: string }> = [
     {
-      path: join(cwd, "app.config.ts"),
+      path: join(playwrightDir, "app.config.ts"),
       content: generateAppConfig(options),
-      name: "app.config.ts",
+      name: "playwright/app.config.ts",
     },
     {
-      path: join(cwd, "testUsers.ts"),
+      path: join(playwrightDir, "testUsers.ts"),
       content: generateTestUsers(options),
-      name: "testUsers.ts",
+      name: "playwright/testUsers.ts",
     },
     {
-      path: join(cwd, "playwright.config.ts"),
+      path: join(playwrightDir, "playwright.config.ts"),
       content: generatePlaywrightConfig(options),
-      name: "playwright.config.ts",
+      name: "playwright/playwright.config.ts",
     },
     {
-      path: join(cwd, "tsconfig.json"),
+      path: join(playwrightDir, "tsconfig.json"),
       content: generateTsConfig(),
-      name: "tsconfig.json",
+      name: "playwright/tsconfig.json",
     },
     {
-      path: join(cwd, "package.json"),
-      content: generatePackageJson(options),
-      name: "package.json",
-    },
-    {
-      path: join(cwd, ".gitignore"),
+      path: join(playwrightDir, ".gitignore"),
       content: generateGitignore(),
-      name: ".gitignore",
+      name: "playwright/.gitignore",
     },
     {
       path: join(testsDir, "example.spec.ts"),
       content: generateExampleSpec(options),
-      name: "tests/example.spec.ts",
+      name: "playwright/tests/example.spec.ts",
     },
   ];
 
@@ -188,7 +185,7 @@ export async function scaffold(): Promise<void> {
     console.log(`  \u2713 Created ${file.name}`);
   }
 
-  console.log("");
-  console.log("Run 'npm install' to get started!");
-  console.log("");
+  // Print package.json instructions
+  const instructions = getPackageJsonInstructions();
+  console.log(formatPackageJsonInstructions(instructions));
 }

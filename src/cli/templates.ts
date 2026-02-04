@@ -129,6 +129,7 @@ const baseURL = buildAppUrl(appConfig, targetDomain, targetEnv);
 export default defineConfig({
   ...defaultConfig,
   testDir: "./tests",
+  outputDir: "./test-results",
   use: {
     ...defaultConfig.use,
     baseURL,
@@ -140,7 +141,7 @@ export default defineConfig({
     },
   ],
   reporter: [
-    ["html"],
+    ["html", { outputFolder: "./playwright-report" }],
     [
       "testwright/reporter",
       {
@@ -171,41 +172,46 @@ export function generateTsConfig(): string {
 `;
 }
 
-export function generatePackageJson(options: ScaffoldOptions): string {
-  const packageName = `${options.appSlug}-tests`;
-
-  return `{
-  "name": "${packageName}",
-  "version": "1.0.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "test": "playwright test",
-    "test:headed": "playwright test --headed",
-    "test:debug": "playwright test --debug",
-    "test:ui": "playwright test --ui",
-    "report": "playwright show-report"
-  },
-  "devDependencies": {
-    "@playwright/test": "^1.50.0",
-    "testwright": "^0.1.0",
-    "typescript": "^5.7.0"
-  }
+export interface PackageJsonInstructions {
+  scripts: Record<string, string>;
+  devDependencies: string[];
 }
+
+export function getPackageJsonInstructions(): PackageJsonInstructions {
+  return {
+    scripts: {
+      "test:e2e": "playwright test -c playwright/playwright.config.ts",
+      "test:e2e:headed": "playwright test -c playwright/playwright.config.ts --headed",
+      "test:e2e:debug": "playwright test -c playwright/playwright.config.ts --debug",
+      "test:e2e:ui": "playwright test -c playwright/playwright.config.ts --ui",
+      "test:e2e:report": "playwright show-report playwright/playwright-report",
+    },
+    devDependencies: ["@playwright/test", "testwright", "typescript"],
+  };
+}
+
+export function formatPackageJsonInstructions(instructions: PackageJsonInstructions): string {
+  const scriptsJson = JSON.stringify(instructions.scripts, null, 4)
+    .split("\n")
+    .map((line, i) => (i === 0 ? line : "  " + line))
+    .join("\n");
+
+  return `
+Add these scripts to your package.json:
+
+  "scripts": ${scriptsJson}
+
+Then install dependencies:
+
+  npm install --save-dev ${instructions.devDependencies.join(" ")}
 `;
 }
 
 export function generateGitignore(): string {
-  return `# Dependencies
-node_modules/
-
-# Build output
-dist/
-
-# Test results
+  return `# Test results
 test-results/
 playwright-report/
-playwright/.cache/
+.cache/
 
 # Authentication cache
 .auth/
@@ -214,16 +220,6 @@ playwright/.cache/
 .env
 .env.local
 .env.*.local
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
 `;
 }
 
