@@ -1,8 +1,7 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "testwright/fixtures";
 import {
   buildAppUrl,
   getAppTypePrefix,
-  testCase,
   validateTestCaseId,
   checkForDuplicates,
 } from "testwright";
@@ -134,17 +133,20 @@ test.describe("Reporter Validation Utilities", () => {
  * Multi-domain test cases with tracking
  */
 test.describe("Multi-Domain Test Cases", () => {
-  testCase("TC-3001", "domain-alpha dev URL is correct", async () => {
+  test("domain-alpha dev URL is correct", async ({ testCaseId }) => {
+    testCaseId("TC-3001");
     const url = buildAppUrl(appConfig, "domain-alpha", "dev");
     expect(url).toBe("https://www-dev.domain-alpha.com/s/member-landing");
   });
 
-  testCase("TC-3002", "domain-beta dev URL is correct", async () => {
+  test("domain-beta dev URL is correct", async ({ testCaseId }) => {
+    testCaseId("TC-3002");
     const url = buildAppUrl(appConfig, "domain-beta", "dev");
     expect(url).toBe("https://www-dev.domain-beta.com/s/member-landing");
   });
 
-  testCase("TC-3003", "staging URLs use correct subdomain", async () => {
+  test("staging URLs use correct subdomain", async ({ testCaseId }) => {
+    testCaseId("TC-3003");
     const alphaStaging = buildAppUrl(appConfig, "domain-alpha", "staging");
     const betaStaging = buildAppUrl(appConfig, "domain-beta", "staging");
 
@@ -152,17 +154,14 @@ test.describe("Multi-Domain Test Cases", () => {
     expect(betaStaging).toContain("www-staging");
   });
 
-  testCase(
-    ["TC-3004", "TC-3005"],
-    "production URLs use www subdomain",
-    async () => {
-      // TC-3004: domain-alpha prod URL
-      const alphaProd = buildAppUrl(appConfig, "domain-alpha", "prod");
-      expect(alphaProd).toBe("https://www.domain-alpha.com/s/member-landing");
+  test("production URLs use www subdomain", async ({ testCaseId }) => {
+    testCaseId(["TC-3004", "TC-3005"]);
+    // TC-3004: domain-alpha prod URL
+    const alphaProd = buildAppUrl(appConfig, "domain-alpha", "prod");
+    expect(alphaProd).toBe("https://www.domain-alpha.com/s/member-landing");
 
-      // TC-3005: domain-beta prod URL
-      const betaProd = buildAppUrl(appConfig, "domain-beta", "prod");
-      expect(betaProd).toBe("https://www.domain-beta.com/s/member-landing");
-    }
-  );
+    // TC-3005: domain-beta prod URL
+    const betaProd = buildAppUrl(appConfig, "domain-beta", "prod");
+    expect(betaProd).toBe("https://www.domain-beta.com/s/member-landing");
+  });
 });

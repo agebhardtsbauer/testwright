@@ -1,4 +1,5 @@
-import { test as base, type Page, type BrowserContext } from "@playwright/test";
+import { type Page, type BrowserContext } from "@playwright/test";
+import { baseFixtures } from "./base.js";
 import type { AppConfig, TestUser, Environment } from "../types/index.js";
 import { startAuthenticatedSession } from "../helpers/auth.js";
 import { getTargetDomain, getTargetEnvironment } from "../utils/urlBuilder.js";
@@ -54,7 +55,7 @@ export interface AuthenticatedFixtures {
  * });
  * ```
  */
-export const authenticatedFixtures = base.extend<
+export const authenticatedFixtures = baseFixtures.extend<
   AuthenticatedFixtures,
   AuthenticatedFixtureOptions
 >({

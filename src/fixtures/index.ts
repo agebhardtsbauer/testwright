@@ -33,12 +33,14 @@
 export { dynamicFixtures as test } from "./dynamic.js";
 
 // Export individual fixture sets for customization
+export { baseFixtures } from "./base.js";
 export { authenticatedFixtures } from "./authenticated.js";
 export { userTypeFixtures } from "./userType.js";
 export { appFixtures } from "./app.js";
 export { dynamicFixtures } from "./dynamic.js";
 
 // Export fixture types
+export type { BaseFixtures, TestCaseIdFn } from "./base.js";
 export type {
   AuthenticatedFixtureOptions,
   AuthenticatedFixtures,

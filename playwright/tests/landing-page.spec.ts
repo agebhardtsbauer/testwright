@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "testwright/fixtures";
 import {
   buildAppUrl,
   getTargetEnvironment,
@@ -7,7 +7,6 @@ import {
   getUsersByType,
   getUserPassword,
   getSessionFilePath,
-  testCase,
 } from "testwright";
 import { appConfig } from "../app.config.js";
 import { testUsers } from "../testUsers.js";
@@ -110,7 +109,7 @@ test.describe("Session Cache", () => {
 });
 
 /**
- * Examples using testCase() for test case tracking
+ * Examples using testCaseId fixture for test case tracking
  *
  * These tests demonstrate how to associate tests with test case IDs
  * from your test management system. The TestCaseReporter will extract
@@ -118,21 +117,19 @@ test.describe("Session Cache", () => {
  */
 test.describe("Test Case Tracking Examples", () => {
   // Single test case ID
-  testCase("TC-1001", "verify landing page loads", async ({ page }) => {
+  test("verify landing page loads", async ({ page, testCaseId }) => {
+    testCaseId("TC-1001");
     await page.goto("/");
     await expect(page).toHaveTitle(/.*/);
   });
 
   // Multiple test case IDs for one test
-  testCase(
-    ["TC-1002", "TC-1003"],
-    "verify page has essential elements",
-    async ({ page }) => {
-      await page.goto("/");
-      // TC-1002: Page has main content
-      await expect(page.locator("body")).toBeVisible();
-      // TC-1003: Page has navigation (if present)
-      // This test satisfies both test cases
-    }
-  );
+  test("verify page has essential elements", async ({ page, testCaseId }) => {
+    testCaseId(["TC-1002", "TC-1003"]);
+    await page.goto("/");
+    // TC-1002: Page has main content
+    await expect(page.locator("body")).toBeVisible();
+    // TC-1003: Page has navigation (if present)
+    // This test satisfies both test cases
+  });
 });

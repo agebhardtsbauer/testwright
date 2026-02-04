@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "testwright/fixtures";
 import {
   getTargetEnvironment,
   getTargetDomain,
@@ -11,7 +11,6 @@ import {
   loginToApp,
   fillLoginForm,
   submitLoginForm,
-  testCase,
 } from "testwright";
 import { appConfig } from "../app.config.js";
 import { testUsers } from "../testUsers.js";
@@ -146,12 +145,14 @@ test.describe("User Selection Patterns", () => {
  * Test Case tracking examples for authentication scenarios
  */
 test.describe("Authentication Test Cases", () => {
-  testCase("TC-2001", "session path format is correct", async () => {
+  test("session path format is correct", async ({ testCaseId }) => {
+    testCaseId("TC-2001");
     const path = getSessionFilePath("test-user", "test-domain", "dev");
     expect(path).toMatch(/\.auth\/.*\.json$/);
   });
 
-  testCase("TC-2002", "user password retrieval works", async () => {
+  test("user password retrieval works", async ({ testCaseId }) => {
+    testCaseId("TC-2002");
     const user = getUsersByType(testUsers, "member", "dev", "domain-alpha")[0];
     if (user) {
       const password = getUserPassword(user);
@@ -159,18 +160,15 @@ test.describe("Authentication Test Cases", () => {
     }
   });
 
-  testCase(
-    ["TC-2003", "TC-2004"],
-    "environment helpers return valid values",
-    async () => {
-      // TC-2003: getTargetEnvironment returns valid environment
-      const env = getTargetEnvironment();
-      expect(["dev", "staging", "prod"]).toContain(env);
+  test("environment helpers return valid values", async ({ testCaseId }) => {
+    testCaseId(["TC-2003", "TC-2004"]);
+    // TC-2003: getTargetEnvironment returns valid environment
+    const env = getTargetEnvironment();
+    expect(["dev", "staging", "prod"]).toContain(env);
 
-      // TC-2004: getTargetDomain returns string
-      const domain = getTargetDomain(appConfig);
-      expect(typeof domain).toBe("string");
-      expect(domain.length).toBeGreaterThan(0);
-    }
-  );
+    // TC-2004: getTargetDomain returns string
+    const domain = getTargetDomain(appConfig);
+    expect(typeof domain).toBe("string");
+    expect(domain.length).toBeGreaterThan(0);
+  });
 });
