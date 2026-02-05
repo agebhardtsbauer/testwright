@@ -60,20 +60,21 @@ export function testCase(
   // Normalize to array
   const ids = Array.isArray(testCaseId) ? testCaseId : [testCaseId];
 
-  // Create test with annotations
-  // Note: Playwright requires explicit fixture listing - we include common ones
-  base(title, async ({ page, context, browser, request, browserName }, testInfo) => {
-    // Add annotations to test info
-    for (const id of ids) {
-      testInfo.annotations.push({
-        type: TEST_CASE_ANNOTATION_TYPE,
-        description: id,
-      });
-    }
+  // Build annotations for test registration
+  const annotations = ids.map((id) => ({
+    type: TEST_CASE_ANNOTATION_TYPE,
+    description: id,
+  }));
 
-    // Run the actual test
-    await testFn({ page, context, browser, request, browserName }, testInfo);
-  });
+  // Create test with annotations passed at registration time
+  // This makes them available in onBegin for the reporter
+  base(
+    title,
+    { annotation: annotations },
+    async ({ page, context, browser, request, browserName }, testInfo) => {
+      await testFn({ page, context, browser, request, browserName }, testInfo);
+    }
+  );
 }
 
 /**
@@ -89,17 +90,18 @@ testCase.only = function (
   testFn: TestFunction
 ): void {
   const ids = Array.isArray(testCaseId) ? testCaseId : [testCaseId];
+  const annotations = ids.map((id) => ({
+    type: TEST_CASE_ANNOTATION_TYPE,
+    description: id,
+  }));
 
-  base.only(title, async ({ page, context, browser, request, browserName }, testInfo) => {
-    for (const id of ids) {
-      testInfo.annotations.push({
-        type: TEST_CASE_ANNOTATION_TYPE,
-        description: id,
-      });
+  base.only(
+    title,
+    { annotation: annotations },
+    async ({ page, context, browser, request, browserName }, testInfo) => {
+      await testFn({ page, context, browser, request, browserName }, testInfo);
     }
-
-    await testFn({ page, context, browser, request, browserName }, testInfo);
-  });
+  );
 };
 
 /**
@@ -115,19 +117,18 @@ testCase.skip = function (
   testFn: TestFunction
 ): void {
   const ids = Array.isArray(testCaseId) ? testCaseId : [testCaseId];
+  const annotations = ids.map((id) => ({
+    type: TEST_CASE_ANNOTATION_TYPE,
+    description: id,
+  }));
 
-  base(title, async ({ page, context, browser, request, browserName }, testInfo) => {
-    testInfo.skip(true, "Skipped via testCase.skip");
-
-    for (const id of ids) {
-      testInfo.annotations.push({
-        type: TEST_CASE_ANNOTATION_TYPE,
-        description: id,
-      });
+  base.skip(
+    title,
+    { annotation: annotations },
+    async ({ page, context, browser, request, browserName }, testInfo) => {
+      await testFn({ page, context, browser, request, browserName }, testInfo);
     }
-
-    await testFn({ page, context, browser, request, browserName }, testInfo);
-  });
+  );
 };
 
 /**
@@ -143,19 +144,18 @@ testCase.fixme = function (
   testFn: TestFunction
 ): void {
   const ids = Array.isArray(testCaseId) ? testCaseId : [testCaseId];
+  const annotations = ids.map((id) => ({
+    type: TEST_CASE_ANNOTATION_TYPE,
+    description: id,
+  }));
 
-  base(title, async ({ page, context, browser, request, browserName }, testInfo) => {
-    testInfo.fixme(true, "Marked fixme via testCase.fixme");
-
-    for (const id of ids) {
-      testInfo.annotations.push({
-        type: TEST_CASE_ANNOTATION_TYPE,
-        description: id,
-      });
+  base.fixme(
+    title,
+    { annotation: annotations },
+    async ({ page, context, browser, request, browserName }, testInfo) => {
+      await testFn({ page, context, browser, request, browserName }, testInfo);
     }
-
-    await testFn({ page, context, browser, request, browserName }, testInfo);
-  });
+  );
 };
 
 /**

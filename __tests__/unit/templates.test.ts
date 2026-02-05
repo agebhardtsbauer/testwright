@@ -203,8 +203,8 @@ describe("getPackageJsonInstructions", () => {
   it("should include required devDependencies", () => {
     const result = getPackageJsonInstructions();
     expect(result.devDependencies).toContain("@playwright/test");
-    expect(result.devDependencies).toContain("testwright");
     expect(result.devDependencies).toContain("typescript");
+    expect(result.devDependencies).toContain("@types/node");
   });
 });
 
@@ -221,7 +221,7 @@ describe("formatPackageJsonInstructions", () => {
     const result = formatPackageJsonInstructions(instructions);
     expect(result).toContain("npm install --save-dev");
     expect(result).toContain("@playwright/test");
-    expect(result).toContain("testwright");
+    expect(result).toContain("typescript");
   });
 });
 

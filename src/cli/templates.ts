@@ -185,7 +185,7 @@ export function getPackageJsonInstructions(): PackageJsonInstructions {
       "test:e2e:ui": "playwright test -c playwright/playwright.config.ts --ui",
       "test:e2e:report": "playwright show-report playwright/playwright-report",
     },
-    devDependencies: ["@playwright/test", "testwright", "typescript", "@types/node"],
+    devDependencies: ["@playwright/test", "typescript", "@types/node"],
   };
 }
 
