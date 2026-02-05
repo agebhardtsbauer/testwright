@@ -63,11 +63,48 @@ export interface FormSelectors {
 }
 
 /**
+ * Fill and verify an input field
+ *
+ * Fills the input and verifies the value was set correctly.
+ * Retries up to 3 times if the value doesn't match.
+ */
+async function fillAndVerify(
+  input: ReturnType<Page["locator"]>,
+  value: string,
+  maxRetries: number = 3
+): Promise<void> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    await input.fill(value);
+
+    // Verify the value was set correctly
+    const actualValue = await input.inputValue();
+    if (actualValue === value) {
+      return;
+    }
+
+    // Value mismatch - clear and retry
+    if (attempt < maxRetries) {
+      await input.clear();
+    }
+  }
+
+  // Final check after all retries
+  const finalValue = await input.inputValue();
+  if (finalValue !== value) {
+    throw new Error(
+      `Failed to fill input after ${maxRetries} attempts. Expected "${value}" but got "${finalValue}"`
+    );
+  }
+}
+
+/**
  * Fill two-step login form (third-party auth flow)
  *
  * Handles the two-step login process:
  * 1. Enter email and click Continue
  * 2. Wait for password page, enter password
+ *
+ * Verifies each field value after filling to handle flaky input behavior.
  *
  * @param page - Playwright Page object
  * @param email - Email address to fill
@@ -94,10 +131,10 @@ export async function fillLoginForm(
   const continueButtonSelector = selectors?.continueButton ?? DEFAULT_SELECTORS.continueButton;
   const passwordSelector = selectors?.password ?? DEFAULT_SELECTORS.password;
 
-  // Step 1: Fill email field
+  // Step 1: Fill email field and verify
   const emailInput = page.locator(emailSelector);
   await emailInput.waitFor({ state: "visible", timeout: 10000 });
-  await emailInput.fill(email);
+  await fillAndVerify(emailInput, email);
 
   // Click Continue button
   const continueButton = page.locator(continueButtonSelector);
@@ -107,14 +144,15 @@ export async function fillLoginForm(
   // Step 2: Wait for password page and fill password
   const passwordInput = page.locator(passwordSelector);
   await passwordInput.waitFor({ state: "visible", timeout: 10000 });
-  await passwordInput.fill(password);
+  await fillAndVerify(passwordInput, password);
 }
 
 /**
- * Submit login form and wait for navigation
+ * Submit login form
  *
- * Clicks the Login button and waits for page navigation to complete.
- * This is step 2 of the two-step login process (after password entry).
+ * Clicks the Login button. Does not wait for network idle since third-party
+ * auth pages often have heartbeat/polling requests. The caller should use
+ * waitForURL() to verify the redirect completed.
  *
  * @param page - Playwright Page object
  * @param selectors - Custom selectors for form elements
@@ -134,11 +172,10 @@ export async function submitLoginForm(
   const loginButton = page.locator(loginButtonSelector);
   await loginButton.waitFor({ state: "visible", timeout: 10000 });
 
-  // Click and wait for navigation
-  await Promise.all([
-    page.waitForNavigation({ waitUntil: "networkidle", timeout: 30000 }),
-    loginButton.click(),
-  ]);
+  // Click the login button - don't wait for networkidle as third-party auth
+  // pages often have heartbeat requests. loginToApp() uses waitForURL() to
+  // verify the redirect to the app completed.
+  await loginButton.click();
 }
 
 /**
@@ -208,8 +245,10 @@ export async function loginToApp(
 
   // Navigate to app URL (will redirect to third-party auth if not authenticated)
   // Or use custom loginPath if specified (e.g., direct auth URL)
+  // Don't use networkidle since third-party auth pages often have heartbeat requests.
+  // fillLoginForm() waits for the specific elements we need.
   const startUrl = loginPath ? new URL(loginPath, appUrl).toString() : appUrl;
-  await page.goto(startUrl, { timeout, waitUntil: "networkidle" });
+  await page.goto(startUrl, { timeout });
 
   // Get password
   const password = getUserPassword(user);
