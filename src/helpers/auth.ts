@@ -31,7 +31,7 @@ export interface LoginOptions {
   environment?: Environment;
   /** Skip session cache and always perform login */
   skipSessionCache?: boolean;
-  /** Custom login path (default: '/login') */
+  /** Custom login path (default: navigates to app base URL) */
   loginPath?: string;
   /** Element to wait for after successful login */
   waitForSelector?: string;
@@ -159,7 +159,7 @@ export async function loginToApp(
 ): Promise<Page> {
   const domain = options?.domain ?? getTargetDomain(app);
   const environment = options?.environment ?? getTargetEnvironment();
-  const loginPath = options?.loginPath ?? "/login";
+  const loginPath = options?.loginPath;
   const timeout = options?.timeout ?? 30000;
   const skipSessionCache = options?.skipSessionCache ?? false;
   const waitForSelector = options?.waitForSelector;
@@ -188,9 +188,9 @@ export async function loginToApp(
 
   // Build login URL
   const baseUrl = buildAppUrl(app, domain, environment);
-  const loginUrl = new URL(loginPath, baseUrl).toString();
+  const loginUrl = loginPath ? new URL(loginPath, baseUrl).toString() : baseUrl;
 
-  // Navigate to login page
+  // Navigate to app (or custom login path if specified)
   await page.goto(loginUrl, { timeout, waitUntil: "networkidle" });
 
   // Get password
