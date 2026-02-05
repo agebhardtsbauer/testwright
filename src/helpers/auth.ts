@@ -13,12 +13,15 @@ import {
 import { getUserPassword } from "../utils/userFilter.js";
 
 /**
- * Default selectors for login form elements
+ * Default selectors for two-step login form elements (third-party auth)
  */
 const DEFAULT_SELECTORS = {
-  email: 'input[type="email"], input[name="email"], #email',
-  password: 'input[type="password"], input[name="password"], #password',
-  submitButton: 'button[type="submit"], input[type="submit"], [data-testid="login-submit"]',
+  // Step 1: Email entry
+  email: '//input[@id="username"]',
+  continueButton: '//button[@type="submit"][text()="Continue"]',
+  // Step 2: Password entry
+  password: '//input[@id="password"]',
+  loginButton: '//button[@type="submit"][text()="Login"]',
 };
 
 /**
@@ -46,21 +49,25 @@ export interface LoginOptions {
 }
 
 /**
- * Options for form filling
+ * Options for two-step login form elements
  */
 export interface FormSelectors {
-  /** Selector for email input */
+  /** Selector for email/username input (step 1) */
   email?: string;
-  /** Selector for password input */
+  /** Selector for continue button (step 1) */
+  continueButton?: string;
+  /** Selector for password input (step 2) */
   password?: string;
-  /** Selector for submit button */
-  submitButton?: string;
+  /** Selector for login button (step 2) */
+  loginButton?: string;
 }
 
 /**
- * Fill login form fields
+ * Fill two-step login form (third-party auth flow)
  *
- * Fills email and password fields using provided or default selectors.
+ * Handles the two-step login process:
+ * 1. Enter email and click Continue
+ * 2. Wait for password page, enter password
  *
  * @param page - Playwright Page object
  * @param email - Email address to fill
@@ -71,8 +78,9 @@ export interface FormSelectors {
  * ```typescript
  * await fillLoginForm(page, 'user@example.com', 'password123');
  * await fillLoginForm(page, email, password, {
- *   email: '#custom-email',
- *   password: '#custom-password'
+ *   email: '//input[@id="email"]',
+ *   continueButton: '//button[text()="Next"]',
+ *   password: '//input[@id="pass"]',
  * });
  * ```
  */
@@ -83,14 +91,20 @@ export async function fillLoginForm(
   selectors?: FormSelectors
 ): Promise<void> {
   const emailSelector = selectors?.email ?? DEFAULT_SELECTORS.email;
+  const continueButtonSelector = selectors?.continueButton ?? DEFAULT_SELECTORS.continueButton;
   const passwordSelector = selectors?.password ?? DEFAULT_SELECTORS.password;
 
-  // Fill email field
+  // Step 1: Fill email field
   const emailInput = page.locator(emailSelector);
   await emailInput.waitFor({ state: "visible", timeout: 10000 });
   await emailInput.fill(email);
 
-  // Fill password field
+  // Click Continue button
+  const continueButton = page.locator(continueButtonSelector);
+  await continueButton.waitFor({ state: "visible", timeout: 10000 });
+  await continueButton.click();
+
+  // Step 2: Wait for password page and fill password
   const passwordInput = page.locator(passwordSelector);
   await passwordInput.waitFor({ state: "visible", timeout: 10000 });
   await passwordInput.fill(password);
@@ -99,7 +113,8 @@ export async function fillLoginForm(
 /**
  * Submit login form and wait for navigation
  *
- * Clicks the submit button and waits for page navigation to complete.
+ * Clicks the Login button and waits for page navigation to complete.
+ * This is step 2 of the two-step login process (after password entry).
  *
  * @param page - Playwright Page object
  * @param selectors - Custom selectors for form elements
@@ -107,30 +122,33 @@ export async function fillLoginForm(
  * @example
  * ```typescript
  * await submitLoginForm(page);
- * await submitLoginForm(page, { submitButton: '#login-btn' });
+ * await submitLoginForm(page, { loginButton: '//button[text()="Sign In"]' });
  * ```
  */
 export async function submitLoginForm(
   page: Page,
   selectors?: FormSelectors
 ): Promise<void> {
-  const submitSelector = selectors?.submitButton ?? DEFAULT_SELECTORS.submitButton;
+  const loginButtonSelector = selectors?.loginButton ?? DEFAULT_SELECTORS.loginButton;
 
-  const submitButton = page.locator(submitSelector);
-  await submitButton.waitFor({ state: "visible", timeout: 10000 });
+  const loginButton = page.locator(loginButtonSelector);
+  await loginButton.waitFor({ state: "visible", timeout: 10000 });
 
   // Click and wait for navigation
   await Promise.all([
     page.waitForNavigation({ waitUntil: "networkidle", timeout: 30000 }),
-    submitButton.click(),
+    loginButton.click(),
   ]);
 }
 
 /**
- * Execute full login flow for an app
+ * Execute full login flow for an app (third-party auth)
  *
- * Navigates to login page, fills credentials, submits form,
- * and optionally caches the session.
+ * Handles the two-step third-party authentication flow:
+ * 1. Navigate to app URL (redirects to auth provider)
+ * 2. Enter email and click Continue
+ * 3. Enter password and click Login
+ * 4. Wait for redirect back to app
  *
  * @param page - Playwright Page object
  * @param app - Application configuration
@@ -165,6 +183,9 @@ export async function loginToApp(
   const waitForSelector = options?.waitForSelector;
   const selectors = options?.selectors;
 
+  // Build app URL (this is where we want to end up after login)
+  const appUrl = buildAppUrl(app, domain, environment);
+
   // Check for cached session
   if (!skipSessionCache) {
     const hasValidSession = await isSessionValid(user.id, domain, environment);
@@ -175,7 +196,6 @@ export async function loginToApp(
       await context.storageState({ path: sessionPath });
 
       // Navigate to app
-      const appUrl = buildAppUrl(app, domain, environment);
       await page.goto(appUrl, { timeout, waitUntil: "networkidle" });
 
       if (waitForSelector) {
@@ -186,19 +206,22 @@ export async function loginToApp(
     }
   }
 
-  // Build login URL
-  const baseUrl = buildAppUrl(app, domain, environment);
-  const loginUrl = loginPath ? new URL(loginPath, baseUrl).toString() : baseUrl;
-
-  // Navigate to app (or custom login path if specified)
-  await page.goto(loginUrl, { timeout, waitUntil: "networkidle" });
+  // Navigate to app URL (will redirect to third-party auth if not authenticated)
+  // Or use custom loginPath if specified (e.g., direct auth URL)
+  const startUrl = loginPath ? new URL(loginPath, appUrl).toString() : appUrl;
+  await page.goto(startUrl, { timeout, waitUntil: "networkidle" });
 
   // Get password
   const password = getUserPassword(user);
 
-  // Fill and submit login form
+  // Fill two-step login form (email -> continue -> password)
   await fillLoginForm(page, user.email, password, selectors);
+
+  // Submit login and wait for redirect back to app
   await submitLoginForm(page, selectors);
+
+  // Verify we landed on the app URL after login
+  await page.waitForURL(new RegExp(app.slug), { timeout });
 
   // Wait for post-login element if specified
   if (waitForSelector) {
